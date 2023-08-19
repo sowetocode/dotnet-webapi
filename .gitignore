@@ -420,3 +420,4 @@ __pycache__/
 
 # JetBrains Rider
 *.sln.iml
+.idea/*

@@ -1,0 +1,39 @@
+ARG VERSION=3.1-alpine
+FROM mcr.microsoft.com/dotnet/core/sdk:$VERSION AS build
+
+ENV http_proxy="http://bc-vip.intra.absa.co.za:8080"
+ENV https_proxy="http://bc-vip.intra.absa.co.za:8080"
+
+ARG APP=dotnet-webapi
+
+WORKDIR /build
+COPY . .
+
+# publish: dotnet publish -c release --runtime win-x64'
+
+RUN cd ${APP} && dotnet publish \
+    -c Release \
+    -o ../output \
+    -r alpine-x64 \
+    /p:PublishReadyToRun=true
+
+FROM mcr.microsoft.com/dotnet/core/aspnet:$VERSION
+
+RUN apk add --no-cache tzdata
+
+ARG APP=dotnet-webapi
+
+ENV APP_DIR="/$APP"
+
+WORKDIR $APP_DIR
+
+RUN mkdir wwwroot
+
+ENV APP_USER=app_user
+
+USER $APP_USER
+
+COPY --from=build --chown=$APP_USER:$APP_USER /build/output .
+
+ENTRYPOINT ["dotnet"]
+CMD [ "dotnet-webapi.dll", "--environment=Development" ]
